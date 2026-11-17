@@ -127,23 +127,6 @@ Optional: open `tests/index.html` to run the mathematical test suite.
 
 Open `tests/index.html`. The page loads the same mathematical modules and runs deterministic checks against an independent reference implementation for means, centering and covariance, plus residual / orthogonality / reconstruction tests for the eigen solver and projection.
 
-## Hugging Face Static Space Deployment
-
-1. Create a new Space → **Static**.
-2. Upload the entire project (or push via Git).
-3. Ensure `index.html` sits at the repository root.
-4. The YAML front-matter at the top of this README is already configured for a static SDK.
-5. The Space will serve the files directly; no `app.py` or Gradio is needed.
-
-## GitHub Pages Deployment
-
-1. Create a new GitHub repository.
-2. Upload / push all project files.
-3. Go to **Settings → Pages**.
-4. Under **Source** choose **Deploy from a branch**.
-5. Select branch `main` (or `master`) and folder `/ (root)`.
-6. Save. After a minute the site is available at `https://<user>.github.io/<repo>/`.
-
 The identical `index.html` works on both platforms because all asset paths are relative and there is no server-side code.
 
 ## Limitations
