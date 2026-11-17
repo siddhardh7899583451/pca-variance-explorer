@@ -1,13 +1,3 @@
----
-title: PCA Variance Explorer
-emoji: 📊
-colorFrom: blue
-colorTo: indigo
-sdk: static
-pinned: false
-license: mit
----
-
 # PCA Variance Explorer
 
 **Interactive, fully client-side Principal Component Analysis educational application.**
