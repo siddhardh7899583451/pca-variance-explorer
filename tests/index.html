@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PCA Variance Explorer — Test Suite</title>
+  <style>
+    :root { --bg:#0f172a; --surface:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --pass:#34d399; --fail:#f87171; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 1.5rem; }
+    h1 { font-size: 1.4rem; }
+    .summary { font-size: 1.1rem; margin: 1rem 0; padding: 1rem; background: var(--surface); border-radius: 8px; }
+    .pass { color: var(--pass); }
+    .fail { color: var(--fail); }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #334155; }
+    th { color: var(--muted); }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .badge.pass { background: rgba(52,211,153,0.15); color: var(--pass); }
+    .badge.fail { background: rgba(248,113,113,0.15); color: var(--fail); }
+    a { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <h1>PCA Variance Explorer — Browser Test Suite</h1>
+  <p style="color:var(--muted)">Deterministic mathematical tests running against the same modules as the application. No backend required.</p>
+  <div id="summary" class="summary">Running tests…</div>
+  <table>
+    <thead><tr><th>Status</th><th>Test</th><th>Detail</th></tr></thead>
+    <tbody id="results"></tbody>
+  </table>
+  <p style="margin-top:1.5rem;"><a href="../index.html">← Back to Application</a></p>
+
+  <!-- Load the same modules -->
+  <script src="../js/validation.js"></script>
+  <script src="../js/dataset.js"></script>
+  <script src="../js/preprocessing.js"></script>
+  <script src="../js/covariance.js"></script>
+  <script src="../js/eigen.js"></script>
+  <script src="../js/pca.js"></script>
+  <script src="../js/csv-parser.js"></script>
+  <script src="test-pca.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { results, passed, total } = TestPCA.runAll();
+      const summary = document.getElementById('summary');
+      const tbody = document.getElementById('results');
+
+      summary.innerHTML = `<span class="${passed === total ? 'pass' : 'fail'}">${passed} / ${total} tests passed</span>`;
+      if (passed < total) {
+        summary.innerHTML += ` · <span class="fail">${total - passed} failed</span>`;
+      }
+
+      for (const r of results) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge ${r.passed ? 'pass' : 'fail'}">${r.passed ? 'PASS' : 'FAIL'}</span></td>
+          <td>${r.name}</td>
+          <td style="color:var(--muted);font-size:0.85rem;">${r.detail || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+  </script>
+</body>
+</html>

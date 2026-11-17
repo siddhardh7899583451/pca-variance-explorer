@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive PCA Variance Explorer — learn Principal Component Analysis with live calculations, scree plots, and projections. Fully client-side." />
+  <title>PCA Variance Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <!-- Plotly.js from CDN -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <!-- Fallback without integrity if CDN has issues - Plotly is large; we rely on CDN availability -->
+  <script>
+    // Soft integrity check / fallback notice
+    window.addEventListener('error', function(e) {
+      if (e.target && e.target.src && e.target.src.includes('plotly')) {
+        const banner = document.getElementById('error-banner');
+        if (banner) {
+          banner.textContent = 'Plotly.js failed to load from CDN. Charts will not render. Check your network or try again later.';
+          banner.classList.remove('hidden');
+        }
+      }
+    }, true);
+  </script>
+</head>
+<body>
+  <div id="error-banner" class="hidden" role="alert"></div>
+
+  <header class="app-header">
+    <a href="#" class="logo" data-section="intro">
+      <div class="logo-icon">Σ</div>
+      <span>PCA Variance Explorer</span>
+    </a>
+    <nav class="nav">
+      <button class="nav-link active" data-section="intro">Intro</button>
+      <button class="nav-link" data-section="generate">Generate</button>
+      <button class="nav-link" data-section="upload">Upload</button>
+      <button class="nav-link" data-section="dataset">Dataset</button>
+      <button class="nav-link" data-section="preprocess">Preprocess</button>
+      <button class="nav-link" data-section="covariance">Covariance</button>
+      <button class="nav-link" data-section="eigen">Eigen</button>
+      <button class="nav-link" data-section="variance">Variance</button>
+      <button class="nav-link" data-section="projection">Projection</button>
+      <button class="nav-link" data-section="compare">Compare</button>
+      <button class="nav-link" data-section="learn">Learn</button>
+    </nav>
+    <div class="header-actions">
+      <button id="theme-toggle" class="btn btn-ghost" title="Toggle theme" aria-label="Toggle light/dark theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- INTRO -->
+    <section id="section-intro" class="section active">
+      <div class="card">
+        <h2>Principal Component Analysis — Variance Explorer</h2>
+        <p style="color:var(--text-muted); margin:0.75rem 0 1rem;">
+          An interactive, fully client-side educational tool that demonstrates how PCA finds orthogonal directions of maximum variance
+          and projects high-dimensional data into lower dimensions while preserving as much information as possible.
+        </p>
+        <p style="color:var(--text-muted);">
+          All matrix operations, eigenvalue decompositions (Jacobi method), and visualizations run in your browser.
+          No data is sent to any server. Compatible with GitHub Pages and Hugging Face Static Spaces.
+        </p>
+        <div class="metric-cards" style="margin-top:1.5rem;">
+          <div class="metric-card"><div class="metric-value">JS</div><div class="metric-label">Pure Vanilla JS</div></div>
+          <div class="metric-card"><div class="metric-value">Σ</div><div class="metric-label">Jacobi Eigen</div></div>
+          <div class="metric-card"><div class="metric-value">2D/3D</div><div class="metric-label">Plotly Charts</div></div>
+          <div class="metric-card"><div class="metric-value">100%</div><div class="metric-label">Client-side</div></div>
+        </div>
+        <div style="margin-top:1.5rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button class="btn btn-primary" data-section="generate">Generate Synthetic Data →</button>
+          <button class="btn btn-secondary" data-section="upload">Upload CSV →</button>
+          <button class="btn btn-secondary" data-section="learn">Read the Guide →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GENERATE -->
+    <section id="section-generate" class="section">
+      <div class="card">
+        <h2>Generate Synthetic Dataset</h2>
+        <p class="hint">Create controlled datasets to explore how correlation structure and anisotropy affect principal components.</p>
+        <div class="controls">
+          <div class="control-group">
+            <label for="gen-type">Dataset Type</label>
+            <select id="gen-type">
+              <option value="elliptical">Elliptical / Anisotropic</option>
+              <option value="correlated">Correlated Features</option>
+              <option value="uncorrelated">Uncorrelated (Isotropic)</option>
+              <option value="gaussian3d">3D Gaussian</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="gen-samples">Samples</label>
+            <input type="number" id="gen-samples" value="250" min="5" max="5000" step="10" />
+          </div>
+          <div class="control-group">
+            <label for="gen-features">Features</label>
+            <input type="number" id="gen-features" value="4" min="2" max="20" />
+          </div>
+          <div class="control-group">
+            <label for="gen-noise">Noise</label>
+            <input type="number" id="gen-noise" value="0.15" min="0" max="2" step="0.05" />
+          </div>
+          <div class="control-group">
+            <label for="gen-corr">Correlation</label>
+            <input type="number" id="gen-corr" value="0.75" min="0" max="1" step="0.05" />
+          </div>
+          <div class="control-group">
+            <label for="gen-seed">Seed</label>
+            <input type="number" id="gen-seed" value="42" min="0" />
+          </div>
+          <button id="btn-generate" class="btn btn-primary">Generate Dataset</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- UPLOAD -->
+    <section id="section-upload" class="section">
+      <div class="card">
+        <h2>Upload CSV Dataset</h2>
+        <p class="hint">File is parsed entirely in the browser. Only numeric columns are retained for PCA. Maximum 5 MB.</p>
+        <label class="file-label">
+          <input type="file" id="csv-file" accept=".csv,text/csv" />
+          Choose CSV file…
+        </label>
+        <p class="hint" style="margin-top:0.75rem;">
+          Requirements: header row, at least 2 numeric columns, at least 2 samples.
+          Non-numeric or missing-value columns are automatically excluded with a warning.
+        </p>
+      </div>
+    </section>
+
+    <!-- DATASET -->
+    <section id="section-dataset" class="section">
+      <div class="card">
+        <h2>Dataset Overview</h2>
+        <div id="dataset-info">
+          <p class="hint">Generate or upload a dataset to see statistics and a preview.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PREPROCESS -->
+    <section id="section-preprocess" class="section">
+      <div class="card">
+        <h2>Preprocessing</h2>
+        <div class="toggle-row">
+          <label class="toggle">
+            <input type="checkbox" id="toggle-standardize" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span><strong>Standardize features</strong> (z-score) — recommended when features have different units or scales</span>
+        </div>
+        <p class="hint">
+          <strong>Covariance PCA</strong> (off): uses raw variances — directions of largest absolute spread dominate.<br>
+          <strong>Correlation / Standardized PCA</strong> (on): each feature contributes equally; useful for mixed units.
+        </p>
+        <button id="btn-run-pca" class="btn btn-primary" style="margin:0.75rem 0;">Re-run PCA</button>
+        <div id="preprocess-info"></div>
+        <div style="margin-top:1rem;">
+          <button id="btn-export-processed" class="btn btn-secondary">Export Processed CSV</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- COVARIANCE -->
+    <section id="section-covariance" class="section">
+      <div class="card">
+        <h2>Covariance Matrix</h2>
+        <p class="hint">Sample covariance: Cov = (X<sub>c</sub><sup>T</sup> X<sub>c</sub>) / (n − 1) where X<sub>c</sub> is the centered (or standardized) data.</p>
+        <div id="cov-table"></div>
+        <div id="plot-covariance" class="plot-container"></div>
+      </div>
+    </section>
+
+    <!-- EIGEN -->
+    <section id="section-eigen" class="section">
+      <div class="card">
+        <h2>Eigenvalue Decomposition</h2>
+        <p class="hint">Jacobi method finds eigenvalues λ and orthonormal eigenvectors v such that Cov · v = λ · v. Eigenvalues are sorted descending.</p>
+        <div id="eigen-info"></div>
+      </div>
+    </section>
+
+    <!-- VARIANCE -->
+    <section id="section-variance" class="section">
+      <div class="card">
+        <h2>Explained Variance Dashboard</h2>
+        <div id="variance-summary"></div>
+        <div id="plot-scree" class="plot-container"></div>
+        <p class="hint">
+          The <strong>scree plot</strong> shows how much variance each successive component captures.
+          Look for an “elbow” where additional components add little new information — a common heuristic for choosing the number of components to retain.
+        </p>
+      </div>
+    </section>
+
+    <!-- PROJECTION -->
+    <section id="section-projection" class="section">
+      <div class="card">
+        <h2>PCA Projection</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label for="n-components">Number of components</label>
+            <select id="n-components">
+              <option value="2">2 components</option>
+            </select>
+          </div>
+          <button id="btn-export-projected" class="btn btn-secondary">Export Projected CSV</button>
+        </div>
+        <div id="projection-info"></div>
+        <div class="plot-row">
+          <div id="plot-2d" class="plot-container"></div>
+          <div id="plot-3d" class="plot-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARE -->
+    <section id="section-compare" class="section">
+      <div class="card">
+        <h2>Original vs Reduced Comparison</h2>
+        <p class="hint">Left: first two original features. Right: first two principal components. Scales differ because PCA rotates and (optionally) standardizes the space.</p>
+        <div id="plot-comparison" class="plot-container" style="min-height:420px;"></div>
+      </div>
+    </section>
+
+    <!-- LEARN -->
+    <section id="section-learn" class="section">
+      <div class="card edu-content">
+        <h2>Beginner’s Guide to PCA</h2>
+
+        <h3>What is dimensionality reduction?</h3>
+        <p>Many real-world datasets have dozens or hundreds of features. Dimensionality reduction finds a lower-dimensional representation that still captures the essential structure, making visualization, storage, and modeling easier.</p>
+
+        <h3>What is PCA?</h3>
+        <p>Principal Component Analysis is a linear technique that finds a new set of orthogonal axes (principal components) ordered by the amount of variance they explain. The first principal component points in the direction of greatest variance in the data; the second is orthogonal to the first and captures the next largest remaining variance, and so on.</p>
+
+        <h3>Why is PCA needed?</h3>
+        <ul>
+          <li>Visualization of high-dimensional data (project to 2D/3D)</li>
+          <li>Noise reduction and compression</li>
+          <li>Removing multicollinearity before linear models</li>
+          <li>Feature extraction for downstream machine learning</li>
+        </ul>
+
+        <h3>Variance & Covariance</h3>
+        <p>Variance of a feature measures how spread out its values are. Covariance between two features measures how they vary together. The covariance matrix packs all pairwise covariances (and variances on the diagonal) into a single symmetric matrix.</p>
+        <div class="formula">Cov(X) = (1/(n−1)) · X<sub>c</sub><sup>T</sup> X<sub>c</sub></div>
+
+        <h3>Eigenvalues & Eigenvectors</h3>
+        <p>For a square matrix A, a non-zero vector v and scalar λ satisfying A v = λ v are called an eigenvector and eigenvalue. For the covariance matrix, the eigenvalues are the variances captured by each principal direction, and the eigenvectors are those directions.</p>
+        <div class="formula">Cov · v<sub>i</sub> = λ<sub>i</sub> · v<sub>i</sub></div>
+        <p>Because Cov is symmetric positive semi-definite, eigenvalues are real and non-negative, and eigenvectors can be chosen orthonormal.</p>
+
+        <h3>Principal Components & Explained Variance</h3>
+        <p>After sorting eigenvalues λ<sub>1</sub> ≥ λ<sub>2</sub> ≥ … ≥ λ<sub>p</sub>, the explained variance ratio of component i is λ<sub>i</sub> / Σ λ<sub>j</sub>. The cumulative sum tells you how much total variance is retained by the first k components.</p>
+        <div class="formula">Explained Variance Ratio<sub>i</sub> = λ<sub>i</sub> / Σ<sub>j</sub> λ<sub>j</sub></div>
+
+        <h3>Scree Plot</h3>
+        <p>A bar + line chart of individual and cumulative explained variance. The “elbow” (where the curve flattens) is a practical guide for choosing how many components to keep.</p>
+
+        <h3>Projection</h3>
+        <p>Once you have the eigenvector matrix W (columns = selected components), the reduced data is obtained by the matrix product:</p>
+        <div class="formula">X<sub>reduced</sub> = X<sub>processed</sub> · W</div>
+
+        <h3>Covariance PCA vs Standardized PCA</h3>
+        <ul>
+          <li><strong>Covariance PCA</strong> (mean-centering only): sensitive to feature scales. A feature measured in large units can dominate the first components.</li>
+          <li><strong>Standardized / Correlation PCA</strong> (z-score each feature): all features contribute on equal footing. Preferable when units differ.</li>
+        </ul>
+
+        <h3>Information Loss</h3>
+        <p>When you keep only the first k components you discard the variance belonging to the remaining components. The percentage lost is 100% − cumulative explained variance of the first k components.</p>
+
+        <h3>Practical Applications</h3>
+        <ul>
+          <li>Exploratory data analysis and visualization</li>
+          <li>Image compression and face recognition (eigenfaces)</li>
+          <li>Genomics and spectroscopy</li>
+          <li>Preprocessing step before clustering or regression</li>
+        </ul>
+
+        <h3>Limitations</h3>
+        <ul>
+          <li>Only linear relationships are captured</li>
+          <li>Sensitive to outliers (they inflate variance)</li>
+          <li>Interpretability of components can be difficult when original features are many</li>
+          <li>Assumes that high variance = importance (not always true for prediction)</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <div id="status-log">Ready. All computation is local.</div>
+
+  <footer class="app-footer">
+    <p>PCA Variance Explorer · Pure client-side · Jacobi eigenvalue decomposition · Plotly.js visualizations</p>
+    <p>Deployable on <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a> and <a href="https://huggingface.co/docs/hub/spaces-sdks-static" target="_blank" rel="noopener">Hugging Face Static Spaces</a></p>
+    <p style="margin-top:0.5rem;"><a href="tests/index.html">Run Browser Tests</a> · <a href="docs/mathematical-explanation.md">Math Docs</a> · <a href="docs/architecture.md">Architecture</a></p>
+  </footer>
+
+  <!-- Application scripts (order matters) -->
+  <script src="js/validation.js"></script>
+  <script src="js/dataset.js"></script>
+  <script src="js/preprocessing.js"></script>
+  <script src="js/covariance.js"></script>
+  <script src="js/eigen.js"></script>
+  <script src="js/pca.js"></script>
+  <script src="js/csv-parser.js"></script>
+  <script src="js/visualizations.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
